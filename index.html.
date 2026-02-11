@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Passwort-Checker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%);
+            color: #333;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 410px;
+            margin: 60px auto;
+            background: #fff;
+            box-shadow: 0 4px 24px rgba(100, 150, 250, 0.06), 0 1.5px 2px rgba(200,220,255,0.15);
+            border-radius: 18px;
+            padding: 35px 32px 32px 32px;
+        }
+        label {
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: block;
+        }
+        input[type="password"], input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 1.1em;
+            border: 1px solid #e0e7ef;
+            border-radius: 7px;
+            margin-bottom: 18px;
+            background: #f9fbfe;
+        }
+        .options {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .options label {
+            font-weight: 400;
+            font-size: 0.98em;
+            margin-bottom: 0;
+        }
+        .strength-bar {
+            height: 12px;
+            border-radius: 6px;
+            background-color: #e0e7ef;
+            margin: 10px 0 18px 0;
+            overflow: hidden;
+        }
+        .strength-bar-inner {
+            height: 100%;
+            width: 0;
+            background: linear-gradient(90deg, #a3e635 0%, #facc15 60%, #f87171 100%);
+            border-radius: 6px;
+            transition: width 0.35s;
+        }
+        .strength-text {
+            font-weight: 500;
+            margin-bottom: 6px;
+            min-height: 23px;
+        }
+        .criteria-list {
+            margin-top: 10px;
+            list-style: none;
+            padding: 0;
+            font-size: 0.97em;
+        }
+        .criteria-list li {
+            margin-bottom: 5px;
+        }
+        .good { color: #28b463; }
+        .warn { color: #f39c12; }
+        .bad {  color: #e74c3c; }
+        .footer {
+            margin-top: 28px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #b0b0b0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <label for="password">Passwort eingeben:</label>
+    <input type="password" id="password" autocomplete="off" placeholder="Dein Passwort hier...">
+
+    <div class="options">
+        <label><input type="checkbox" id="lower" checked> Kleinbuchstaben (a-z)</label>
+        <label><input type="checkbox" id="upper" checked> Großbuchstaben (A-Z)</label>
+        <label><input type="checkbox" id="number" checked> Zahlen (0-9)</label>
+        <label><input type="checkbox" id="special" checked> Sonderzeichen (!@#...)</label>
+    </div>
+
+    <div class="strength-text" id="strengthText"></div>
+    <div class="strength-bar">
+        <div class="strength-bar-inner" id="strengthBar"></div>
+    </div>
+    <ul class="criteria-list" id="criteriaList"></ul>
+</div>
+<div class="footer">
+    © 2024 Passwort-Checker – GitHub Pages Ready
+</div>
+<script>
+    const passwordInput = document.getElementById('password');
+    const strengthText = document.getElementById('strengthText');
+    const strengthBar = document.getElementById('strengthBar');
+    const criteriaList = document.getElementById('criteriaList');
+
+    const optionIds = ['lower', 'upper', 'number', 'special'];
+
+    function getActiveOptions() {
+        return {
+            lower: document.getElementById('lower').checked,
+            upper: document.getElementById('upper').checked,
+            number: document.getElementById('number').checked,
+            special: document.getElementById('special').checked
+        }
+    }
+
+    function checkPassword(password, opts) {
+        let criteria = [];
+
+        if (opts.lower) {
+            criteria.push({
+                label: "Kleinbuchstaben",
+                regex: /[a-z]/,
+                present: /[a-z]/.test(password)
+            });
+        }
+        if (opts.upper) {
+            criteria.push({
+                label: "Großbuchstaben",
+                regex: /[A-Z]/,
+                present: /[A-Z]/.test(password)
+            });
+        }
+        if (opts.number) {
+            criteria.push({
+                label: "Zahlen",
+                regex: /\d/,
+                present: /\d/.test(password)
+            });
+        }
+        if (opts.special) {
+            criteria.push({
+                label: "Sonderzeichen",
+                regex: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
+                present: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+            });
+        }
+
+        // Mindestlänge
+        let minLength = Math.max(8, criteria.length * 2 + 2);
+        let lengthOK = password.length >= minLength;
+
+        return {
+            criteria: criteria,
+            lengthOK: lengthOK,
+            minLength: minLength
+        }
+    }
+
+    function evaluateStrength(password, opts, check) {
+        let score = 0;
+        let maxScore = check.criteria.length + 1;
+
+        if (check.lengthOK) score++;
+        for (const crit of check.criteria) {
+            if (crit.present) score++;
+        }
+        let percent = Math.round((score / maxScore) * 100);
+
+        let level = "";
+        let color = "";
+        if (percent === 100) {
+            level = "Sehr stark";
+            color = "#28b463";
+        } else if (percent >= 80) {
+            level = "Stark";
+            color = "#82e0aa";
+        } else if (percent >= 60) {
+            level = "Okay";
+            color = "#f7ca18";
+        } else if (percent >= 40) {
+            level = "Schwach";
+            color = "#f39c12";
+        } else {
+            level = "Sehr schwach";
+            color = "#e74c3c";
+        }
+        return {percent, level, color};
+    }
+
+    function updateUI() {
+        const password = passwordInput.value;
+        const opts = getActiveOptions();
+        const check = checkPassword(password, opts);
+        const evalRes = evaluateStrength(password, opts, check);
+
+        // Text und Farbe
+        strengthText.textContent = password.length === 0 ? "" : `Stärke: ${evalRes.level}`;
+        strengthText.style.color = evalRes.color;
+        strengthBar.style.width = evalRes.percent + "%";
+        strengthBar.style.background = `linear-gradient(90deg, #a3e635 0%, #facc15 60%, #f87171 100%)`;
+
+        // Kriterien-Liste
+        let html = "";
+        html += `<li class="${check.lengthOK ? "good" : "bad"}">Mindestlänge: ${check.minLength} Zeichen</li>`;
+        for (const crit of check.criteria) {
+            html += `<li class="${crit.present ? "good" : "bad"}">${crit.label} enthalten</li>`;
+        }
+        criteriaList.innerHTML = html;
+    }
+
+    passwordInput.addEventListener('input', updateUI);
+    for (const id of optionIds) {
+        document.getElementById(id).addEventListener('change', updateUI);
+    }
+    updateUI();
+</script>
+</body>
+</html>
