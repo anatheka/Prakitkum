@@ -46,6 +46,9 @@
             font-size: 0.98em;
             margin-bottom: 0;
         }
+        .showpass {
+            margin-bottom: 18px;
+        }
         .strength-bar {
             height: 12px;
             border-radius: 6px;
@@ -90,6 +93,12 @@
     <label for="password">Passwort eingeben:</label>
     <input type="password" id="password" autocomplete="off" placeholder="Dein Passwort hier...">
 
+    <div class="showpass">
+        <label>
+            <input type="checkbox" id="togglePass"> Passwort anzeigen
+        </label>
+    </div>
+
     <div class="options">
         <label><input type="checkbox" id="lower" checked> Kleinbuchstaben (a-z)</label>
         <label><input type="checkbox" id="upper" checked> Großbuchstaben (A-Z)</label>
@@ -111,6 +120,7 @@
     const strengthText = document.getElementById('strengthText');
     const strengthBar = document.getElementById('strengthBar');
     const criteriaList = document.getElementById('criteriaList');
+    const togglePass = document.getElementById('togglePass');
 
     const optionIds = ['lower', 'upper', 'number', 'special'];
 
@@ -222,6 +232,9 @@
     for (const id of optionIds) {
         document.getElementById(id).addEventListener('change', updateUI);
     }
+    togglePass.addEventListener('change', function() {
+        passwordInput.type = this.checked ? "text" : "password";
+    });
     updateUI();
 </script>
 </body>
